@@ -1,43 +1,40 @@
-pipeline{
-    agent any;
-    stages{
-        stage("Code Clone"){
-            steps{
-                git url:"https://github.com/shubhamyadav965/two-tier-flask-app.git", branch: "master"
-            }
-        }
-        
-        stage("Build"){
-            steps{
+pipeline {
+    agent any
+
+    stages {
+        stage("Build") {
+            steps {
                 sh "docker build -t two-tier-flask-app ."
             }
         }
-        
-        stage("Test"){
-            steps{
+
+        stage("Test") {
+            steps {
                 echo "Developer/Tester tests likh k dega"
             }
         }
-        
-        stage("Push to Docker hub"){
-            steps{
+
+        stage("Push to Docker Hub") {
+            steps {
                 withCredentials([usernamePassword(
-                    credentialsId:"dockerHubCreds",
-                    passwordVariable:"dockerHubPass",
-                    usernameVariable:"dockerHubUser"
-                )]){
-                    sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
-                    sh "docker image tag two-tier-flask-app ${env.dockerHubUser}/two-tier-flask-app"
-                    sh "docker push ${env.dockerHubUser}/two-tier-flask-app:latest"
+                    credentialsId: "dockerHubCreds",
+                    usernameVariable: "dockerHubUser",
+                    passwordVariable: "dockerHubPass"
+                )]) {
+                    sh '''
+                      docker login -u $dockerHubUser -p $dockerHubPass
+                      docker tag two-tier-flask-app $dockerHubUser/two-tier-flask-app:latest
+                      docker push $dockerHubUser/two-tier-flask-app:latest
+                    '''
                 }
             }
         }
-        
-        stage("Deploy"){
-            steps{
+
+        stage("Deploy") {
+            steps {
                 sh '''
-                    docker compose down || true
-                    docker compose up -d
+                  docker compose down || true
+                  docker compose up -d
                 '''
             }
         }
